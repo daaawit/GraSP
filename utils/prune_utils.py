@@ -6,23 +6,6 @@ import torch.nn.functional as F
 from .common_utils import try_contiguous
 
 
-def _fetch_weights_collections(scores, _prev_masks):
-    weights = []
-    eps = 1e-10
-    if _prev_masks is None:
-        for m in scores.keys():
-            if isinstance(m, (nn.Linear, nn.Conv2d)):
-                w = scores[m].view(-1).data.cpu().numpy()
-                weights.extend(w.tolist())
-    else:
-        for m in scores.keys():
-            if isinstance(m, (nn.Linear, nn.Conv2d)):
-                w = scores[m]
-                w = filter_weights(w, _prev_masks[m])
-                weights.extend(w)
-    return weights
-
-
 def _extract_patches(x, kernel_size, stride, padding):
     """
     :param x: The input feature maps.  (batch_size, in_c, h, w)
@@ -241,6 +224,4 @@ class ComputeCovG:
         else:
             cov_g = g.t() @ (g / batch_size)
         return cov_g
-
-
 
