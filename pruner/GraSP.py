@@ -124,14 +124,15 @@ def GraSP(net, ratio, train_dataloader, device, num_classes=10, samples_per_clas
     norm_factor = torch.abs(torch.sum(all_scores)) + eps # TODO: *What* is this? Absolute sum? Why? Where is this in the paper? 
     all_scores.div_(norm_factor)
 
-    num_params_to_keep = int(len(all_scores) * (keep_ratio))
+    num_params_to_rm = int(len(all_scores) * (1-keep_ratio))
     
-    threshold, _ = torch.topk(all_scores, num_params_to_keep, sorted=True)
+    threshold, _ = torch.topk(all_scores, num_params_to_rm, sorted=True)
     acceptable_score = threshold[-1]
     
     keep_masks = list()
     for _, g in grads.items():
-        keep_masks.append(((g / norm_factor) >= acceptable_score).float())
+        # Attention: We keep smallest values, misunderstood before (large values -> Little impact on gradient norm)
+        keep_masks.append(((g / norm_factor) <= acceptable_score).float())
     
     names = [name for name, _ in net.named_modules()]
     numel, numprune = print_scores(keep_masks, names)
